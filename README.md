@@ -17,3 +17,5 @@
 2.解密
 
     python3 ./encrypt.py --decrypt <file1> [file2 ...]
+
+* 生成的加密后的文件为*.pri格式

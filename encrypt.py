@@ -12,6 +12,7 @@ def set_pass():
     password = getpass('Please enter your password:')
     confirm_pass = getpass('Please confirm your password:')
     if password != confirm_pass:
+        print("The password doesn't match. Please enter again.\n")
         return set_pass()
     else:
         return confirm_pass
@@ -40,19 +41,38 @@ def encrypt(plain, password):
         print("Encrpt file {} failed".format(plain.name))
         raise(e)
 
+# 检查yes或者no, all以及noall
+class YesNoAll(object):
+    def __init__(self):
+        self.always = 0
+        self.noalways = 0
 
-def yes_no(answer):
-    yes = set(['yes', 'y', 'ye'])
-    no = set(['no', 'n', ''])
+    def yes_no_all(self, answer):
+        yes = set(['yes', 'y', 'ye'])
+        no = set(['no', 'n', ''])
+        always = set(['all', 'al', 'a'])
+        noalways = set(['noall', 'noal', 'noa', 'na'])
+        selection = '(yes/no/all/noall) '
 
-    while True:
-        choice = input(answer).lower()
-        if choice in yes:
+        if self.always:
             return True
-        elif choice in no:
+        elif self.noalways:
             return False
-        else:
-            print("Please repond with 'yes' or 'no'\n")
+
+        while True:
+            choice = input(answer + selection).lower()
+            if choice in yes:
+                return True
+            elif choice in no:
+                return False
+            elif choice in always:
+                self.always = 1
+                return True
+            elif choice in noalways:
+                self.noalways = 1
+                return False
+            else:
+                print("Please repond with 'yes', 'no', 'all' or 'noall'.\n")
 
 # 解密文件
 def decrypt(secret, password):
@@ -61,8 +81,8 @@ def decrypt(secret, password):
     return 解密后的bytes数据
     """
     decryption = secret.name.split('.pri')[0]
-    # 解析bytes为unicode
     try:
+        # 解析bytes为unicode
         plain = peek(secret.read().decode('utf8'), password)
     except ValueError:
         print("The password is wrong")
@@ -83,20 +103,15 @@ def main():
     parser.add_argument('files', nargs="+")
     args = parser.parse_args()
 
-    if args.en == True:
-        password = set_pass()
-        for filename in args.files:
-            with open(filename, "rb") as f:
-                encrypt(f, password)
-            if yes_no("Would you delete the file {}(yes/no)? ".format(filename)):
-                os.remove(filename)
-    else:
-        password = ask_pass()
-        for filename in args.files:
-            with open(filename, "rb") as f:
-                decrypt(f, password)
-            if yes_no("Would you delete the file {}(yes/no)? ".format(filename)):
-                os.remove(filename)
+    action = encrypt if args.en else decrypt
+    password = set_pass()
+    yna = YesNoAll()
+    for filename in args.files:
+        with open(filename, "rb") as f:
+            action(f, password)
+        question = "Would you delete the file {}?".format(filename)
+        if yna.yes_no_all(question):
+            os.remove(filename)
 
     return 0
 
